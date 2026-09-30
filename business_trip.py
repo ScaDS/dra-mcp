@@ -139,10 +139,34 @@ def format_date(value: str) -> str:
     raise ValueError("Dates must use YYYY-MM-DD or DD.MM.YYYY format.")
 
 
+def parse_datetime(date_value: str, time_value: str, label: str) -> datetime:
+    for date_format in ("%Y-%m-%d", "%d.%m.%Y"):
+        try:
+            parsed_date = datetime.strptime(date_value, date_format).date()
+            break
+        except ValueError:
+            continue
+    else:
+        raise ValueError(f"{label} date must use YYYY-MM-DD or DD.MM.YYYY format.")
+
+    try:
+        parsed_time = datetime.strptime(time_value, "%H:%M").time()
+    except ValueError as error:
+        raise ValueError(f"{label} time must use HH:MM format.") from error
+    return datetime.combine(parsed_date, parsed_time)
+
+
 def create_business_trip_application(
-    output_path: str | Path = DEFAULT_OUTPUT,
-    *,
-    template_path: str | Path = TEMPLATE_PDF,
+    destination: str | None,
+    purpose: str | None,
+    departure_date: str | None,
+    departure_time: str | None,
+    business_start_date: str | None,
+    business_start_time: str | None,
+    business_end_date: str | None,
+    business_end_time: str | None,
+    return_date: str | None,
+    return_time: str | None,
     service_unit: str | None = None,
     applicant_name: str | None = None,
     department: str | None = None,
@@ -150,17 +174,7 @@ def create_business_trip_application(
     home_address: str | None = None,
     additional_home_address: str | None = None,
     temporary_stay_address: str | None = None,
-    destination: str | None = None,
-    purpose: str | None = None,
     overnight_cost_per_night: str | None = None,
-    departure_date: str | None = None,
-    departure_time: str | None = None,
-    business_start_date: str | None = None,
-    business_start_time: str | None = None,
-    business_end_date: str | None = None,
-    business_end_time: str | None = None,
-    return_date: str | None = None,
-    return_time: str | None = None,
     outbound_other_transport: str | None = None,
     return_other_transport: str | None = None,
     bahncard_number: str | None = None,
@@ -217,13 +231,103 @@ def create_business_trip_application(
     bahncard_rate: str | None = None,
 ) -> Path:
     """Fill applicant-editable fields in the business-trip application PDF."""
+    return create_business_trip_application_int(**locals())
+
+def create_business_trip_application_int(output_path:str = DEFAULT_OUTPUT, template_path: str | Path = TEMPLATE_PDF, 
+                                         service_unit: str | None = None,
+                                             applicant_name: str | None = None,
+                                             department: str | None = None,
+                                             office_phone: str | None = None,
+                                             home_address: str | None = None,
+                                             additional_home_address: str | None = None,
+                                             temporary_stay_address: str | None = None,
+                                             destination: str | None = None,
+                                             purpose: str | None = None,
+                                             overnight_cost_per_night: str | None = None,
+                                             departure_date: str | None = None,
+                                             departure_time: str | None = None,
+                                             business_start_date: str | None = None,
+                                             business_start_time: str | None = None,
+                                             business_end_date: str | None = None,
+                                             business_end_time: str | None = None,
+                                             return_date: str | None = None,
+                                             return_time: str | None = None,
+                                             outbound_other_transport: str | None = None,
+                                             return_other_transport: str | None = None,
+                                             bahncard_number: str | None = None,
+                                             bahncard_valid_until: str | None = None,
+                                             travel_card_from: str | None = None,
+                                             travel_card_to: str | None = None,
+                                             bonus_program_name: str | None = None,
+                                             private_car_reason: str | None = None,
+                                             private_car_reason_continuation: str | None = None,
+                                             flight_reason: str | None = None,
+                                             flight_reason_continuation: str | None = None,
+                                             private_stay_from: str | None = None,
+                                             private_stay_until: str | None = None,
+                                             private_stay_destination: str | None = None,
+                                             iban: str | None = None,
+                                             bic: str | None = None,
+                                             bank_name: str | None = None,
+                                             explanations: str | None = None,
+                                             explanations_continuation: str | None = None,
+                                             application_date: str | None = None,
+                                             meals_provided_free: bool | None = None,
+                                             outbound_train: bool | None = None,
+                                             outbound_bus_or_public_transport: bool | None = None,
+                                             outbound_private_car: bool | None = None,
+                                             outbound_passenger_in_private_car: bool | None = None,
+                                             outbound_official_car: bool | None = None,
+                                             outbound_flight: bool | None = None,
+                                             outbound_other_transport_selected: bool | None = None,
+                                             return_train: bool | None = None,
+                                             return_bus_or_public_transport: bool | None = None,
+                                             return_private_car: bool | None = None,
+                                             return_passenger_in_private_car: bool | None = None,
+                                             return_official_car: bool | None = None,
+                                             return_flight: bool | None = None,
+                                             return_other_transport_selected: bool | None = None,
+                                             uses_personal_travel_card: bool | None = None,
+                                             participates_in_bonus_program: bool | None = None,
+                                             requests_recognition_for_private_car: bool | None = None,
+                                             has_field_service_role: bool | None = None,
+                                             requests_flight_cost_reimbursement: bool | None = None,
+                                             uses_official_air_miles: bool | None = None,
+                                             requests_advance: bool | None = None,
+                                             application_kind: str | None = None,
+                                             employment_status: str | None = None,
+                                             additional_participants: str | None = None,
+                                             meal_provider: str | None = None,
+                                             overnight_required: str | None = None,
+                                             overnight_payment: str | None = None,
+                                             overnight_provider: str | None = None,
+                                             breakfast: str | None = None,
+                                             travel_start_from: str | None = None,
+                                             travel_end_at: str | None = None,
+                                             bahncard_class: str | None = None,
+                                             bahncard_rate: str | None = None
+                                         ):
     load_dotenv(ENV_FILE)
+
     values = locals().copy()
     values.pop("output_path")
     values.pop("template_path")
     for argument, variable in ENV_DEFAULTS.items():
         if values[argument] is None:
             values[argument] = os.getenv(variable)
+
+    trip_times = (
+        ("departure_date", "departure_time", "business_start_date", "business_start_time"),
+        ("business_end_date", "business_end_time", "return_date", "return_time"),
+    )
+    for earlier_date, earlier_time, later_date, later_time in trip_times:
+        if all(values[name] is not None for name in (earlier_date, earlier_time, later_date, later_time)):
+            earlier = parse_datetime(values[earlier_date], values[earlier_time], earlier_date.replace("_", " ").capitalize())
+            later = parse_datetime(values[later_date], values[later_time], later_date.replace("_", " ").capitalize())
+            if earlier >= later:
+                if earlier_date == "departure_date":
+                    raise ValueError("Departure date/time must be before business start date/time.")
+                raise ValueError("Return date/time must be after business end date/time.")
 
     source = Path(template_path).expanduser().resolve()
     destination = Path(output_path).expanduser().resolve()
@@ -300,7 +404,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     arguments = vars(parser.parse_args(argv))
     output_path = arguments.pop("output")
     template_path = arguments.pop("template")
-    result = create_business_trip_application(
+    result = create_business_trip_application_int(
         output_path=output_path,
         template_path=template_path,
         **arguments,

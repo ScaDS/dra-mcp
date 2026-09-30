@@ -1,6 +1,8 @@
-# Business Trip Application CLI
+# Business Trip Application MCP (Dienstreiseantrag Model Context Protocol)
 
 Fill the applicant-editable fields (sections 1–13) of `00_application-form.pdf` and save a completed PDF. Approval, accounting, and digital-signature fields are intentionally left for the responsible office and signers.
+
+![](docs/images/teaser.png)
 
 ## Setup
 
@@ -54,3 +56,48 @@ create_business_trip_application(
     outbound_train=True,
 )
 ```
+
+## MCP server
+
+`business_trip_mcp_server.py` exposes `create_business_trip_application` as an MCP
+tool via [FastMCP](https://gofastmcp.com), so an MCP-compatible AI agent can fill
+out and generate the PDF for you. It also ships a
+`business_trip_travel_planning_guide` prompt with detailed rules for choosing the
+transport mode (train vs. flight) and estimating realistic departure/return
+dates and times, assuming the traveller starts from Leipzig.
+
+Install dependencies and run the server with [uv](https://docs.astral.sh/uv/):
+
+```powershell
+uv sync
+uv run python business_trip_mcp_server.py
+```
+
+Point your MCP-compatible client (e.g. [Jan.AI](https://github.com/janhq/jan)) at
+this command (`uv run python business_trip_mcp_server.py`, working directory
+`dra-mcp`) to add it as a stdio MCP server. Most clients (Jan.AI, Claude Desktop,
+VS Code, ...) accept a JSON config such as:
+
+```json
+{
+  "mcpServers": {
+    "dra": {
+      "active": true,
+      "args": [
+        "--directory",
+        "C:\\structure\\code\\dra-mcp",
+        "run",
+        "business_trip_mcp_server"
+      ],
+      "command": "uv"
+    }
+  }
+
+
+
+
+
+}
+```
+
+Adjust `cwd` to wherever you cloned this repository.

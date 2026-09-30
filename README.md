@@ -4,6 +4,8 @@ A model context protocol server for filling out business trip application forms.
 
 ![](docs/images/teaser.png)
 
+Note that DRA-MCP is in early stage of development. It may later be used in production and for teaching. Hence, suggestions and improvements are welcome, as long as we don't over-engineer it.
+
 ## Setup
 
 It is recommended to install [uv](https://docs.astral.sh/uv/) first.

@@ -1,6 +1,6 @@
-# Business Trip Application MCP (Dienstreiseantrag Model Context Protocol)
+# Dienstreiseantrag Model Context Protocol (DRA-MCP)
 
-Fill the applicant-editable fields (sections 1–13) of `00_application-form.pdf` and save a completed PDF. Approval, accounting, and digital-signature fields are intentionally left for the responsible office and signers.
+A model context protocol server for filling out business trip application forms.
 
 ![](docs/images/teaser.png)
 

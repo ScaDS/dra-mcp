@@ -6,9 +6,12 @@ Fill the applicant-editable fields (sections 1–13) of `00_application-form.pdf
 
 ## Setup
 
+It is recommended to install [uv](https://docs.astral.sh/uv/) first.
+
 ```
-git clone https://github.com/scads/
-python -m pip install -r requirements.txt
+git clone https://github.com/scads/dra-mcp
+cd dra-mcp
+uv sync
 ```
 
 Put reusable applicant details in `.env`:
@@ -85,19 +88,23 @@ VS Code, ...) accept a JSON config such as:
       "active": true,
       "args": [
         "--directory",
-        "C:\\structure\\code\\dra-mcp",
+        "path/to/dra-mcp",
         "run",
-        "business_trip_mcp_server"
+        "business_trip_mcp_server.py"
       ],
       "command": "uv"
     }
   }
-
-
-
-
-
 }
 ```
 
 Adjust `cwd` to wherever you cloned this repository.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. Note: Large parts of the code in this repository were vibe-coded using GitHub Copilot integration in Visual Studio Code. When modifying code here, consider using a similar tool.
+
+## Acknowledgements
+
+We acknowledge the financial support by the Federal Ministry of Research, Technology and Space of Germany and by Sächsische Staatsministerium für Wissenschaft, Kultur und Tourismus in the programme Center of Excellence for AI-research „Center for Scalable Data Analytics and Artificial Intelligence Dresden/Leipzig“, project identification number: ScaDS.AI
+

@@ -23,11 +23,19 @@ from form_saxony import (  # re-exported for existing imports
     TEXT_FIELDS,
     create_business_trip_application,
 )
-from pdf_form import format_date, parse_datetime  # re-exported for existing imports
+from pdf_form import BASE_DIR, ENV_FILE, format_date, parse_datetime  # re-exported for existing imports
 
 
 FORMS = {form_saxony.NAME: form_saxony, form_tud.NAME: form_tud}
 DEFAULT_FORM = form_saxony.NAME
+
+# Further names of the former single-form module, in their old shapes, for existing imports.
+DATE_FIELDS = set(form_saxony.DATE_FORMATS)
+RADIO_OPTIONS = {
+    argument: (pdf_field, {value: number for number, value in enumerate(labels, start=1)})
+    for argument, (pdf_field, labels) in CHOICES.items()
+}
+DEFAULT_OUTPUT = pdf_form.DEFAULT_OUTPUT_DIR / pdf_form.DEFAULT_OUTPUT_NAME
 
 
 def get_form(name: str | None = None):

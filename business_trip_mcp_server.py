@@ -1,16 +1,18 @@
-"""MCP server exposing `create_business_trip_application` from business_trip.py."""
+"""MCP server exposing `create_business_trip_application` for the form selected by DRA_FORM in .env."""
+
+import os
 
 from fastmcp import FastMCP
 
-from business_trip import create_business_trip_application
+from business_trip import get_form
 
 TRAVEL_PLANNING_GUIDE = """\
-You are helping fill out a German business-trip application (Dienstreiseantrag).
-The applicant is based in Leipzig, Germany. Use the following rules to decide
+You are helping fill out a German business-trip application ({form_title}).
+The applicant is based in {home_city}. Use the following rules to decide
 transport mode, checkboxes, and dates before calling `create_business_trip_application`.
-Do not make up information! E.g. if you don't know the applicant's home address, IBAN, 
+Do not make up information! E.g. if you don't know the applicant's home address, IBAN,
 or other personal details, leave them None or null (not empty string).
-You must provide these fields, and you need to reason some of them based on what is 
+You must provide these fields, and you need to reason some of them based on what is
 given by the user:
 - destination (at least postal code + city + country, if not in Germany)
 - purpose (meeting name or similar)
@@ -26,12 +28,12 @@ given by the user:
 These fields are optional and not required:
 - service_unit
 - applicant_name
-- department": "Antragsteller.Referat",
+- department
 - office_phone
 - home_address
 - additional_home_address
 - temporary_stay_address
-- overnight_cost_per_night          
+- overnight_cost_per_night
 - private_car_reason (only required if using a private car for traveling)
 - flight_reason (only required if using a flight for traveling)
 - private_stay_from
@@ -41,7 +43,6 @@ These fields are optional and not required:
 - bic
 - bank_name
 - explanations
-- explanations_continuation
 - application_date
 If the user didn't provide them, do not fill them! Keep them None / null.
 
@@ -55,28 +56,28 @@ If the user didn't provide them, do not fill them! Keep them None / null.
   train ride (roughly more than half a day of travel each way, e.g. most of
   Western/Southern Europe onward, or anywhere outside Europe) should use flight
   instead: set `outbound_flight=True` and `return_flight=True`. Use
-  `flight_reason` / `flight_reason_continuation` to justify the choice if asked.
+  `flight_reason` to justify the choice if asked.
 - Only select one primary mode per leg unless additional legs (e.g. bus/public
   transport to/from the airport or station) are genuinely part of the journey.
 
 ## Estimating departure and return dates/times
-Assume the traveller starts and ends every trip in Leipzig. Before setting
+Assume the traveller starts and ends every trip in {home_city}. Before setting
 `departure_date`/`departure_time` and `return_date`/`return_time`, estimate the
-one-way travel time from Leipzig to the destination (and back):
-- Nearby destinations reachable within roughly 2-3 hours (e.g. Dresden, Berlin,
-  Halle): same-day travel is fine; departure can be the morning of
-  `business_start_date` and return the evening of `business_end_date`.
+one-way travel time from {home_city} to the destination (and back):
+- Nearby destinations reachable within roughly 2-3 hours (e.g. other large cities
+  in Saxony, Halle or Berlin): same-day travel is fine; departure can be the
+  morning of `business_start_date` and return the evening of `business_end_date`.
 - Mid-distance destinations requiring roughly half a day of travel each way
-  (e.g. Paris, Munich to a far corner of Germany, most of Central Europe by
-  train, or a short flight including airport transfer time): if
-  `business_start_time` is in the early morning (roughly before 9-10am), the
-  traveller cannot arrive in time same-day, so set `departure_date` to the day
-  BEFORE `business_start_date` (with an afternoon/evening `departure_time`).
-  Otherwise, an early-morning departure on `business_start_date` itself may be
-  reasonable. Apply the same logic symmetrically to the return: if
-  `business_end_time` is late in the day and travel home would take half a day,
-  set `return_date` to the day AFTER `business_end_date`; only keep the return on
-  the same day if there is clearly enough remaining time after the business ends.
+  (e.g. Munich, Cologne or Hamburg, most of Central Europe by train, or a short
+  flight including airport transfer time): if `business_start_time` is in the
+  early morning (roughly before 9-10am), the traveller cannot arrive in time
+  same-day, so set `departure_date` to the day BEFORE `business_start_date` (with
+  an afternoon/evening `departure_time`). Otherwise, an early-morning departure on
+  `business_start_date` itself may be reasonable. Apply the same logic
+  symmetrically to the return: if `business_end_time` is late in the day and
+  travel home would take half a day, set `return_date` to the day AFTER
+  `business_end_date`; only keep the return on the same day if there is clearly
+  enough remaining time after the business ends.
 - Long-distance/overseas destinations reachable only by flight: budget extra
   time for airport transfers, check-in, and connections. Set the departure the
   day before the business start whenever the start time plus necessary travel
@@ -87,18 +88,22 @@ one-way travel time from Leipzig to the destination (and back):
   but avoid padding travel by more than necessary (don't add a full travel day
   for a destination that's only 1-2 hours away).
 
-Note that `departure_date` and `departure_time` must be reasonably BEFORE 
-`business_start_date` and `business_start_time`, and `return_date` and `return_time` 
-must be reasonably AFTER `business_end_date` and `business_end_time`.    
+Note that `departure_date` and `departure_time` must be reasonably BEFORE
+`business_start_date` and `business_start_time`, and `return_date` and `return_time`
+must be reasonably AFTER `business_end_date` and `business_end_time`.
 
-
+## Meals and overnight stays
+- `meal_provider` only applies when meals are provided free (`meals_provided_free=True`).
+- `overnight_payment` only applies when `overnight_required="yes"`. With
+  `overnight_payment="free"` set `overnight_provider`; with `"paid"` set
+  `overnight_cost_per_night` and `breakfast` instead.
 
 ## General notes
-- Dates accepted by the tool are `YYYY-MM-DD` or `DD.MM.YYYY`; times are free text
-  (e.g. "08:00").
-- Personal fields (home address, IBAN, etc.) fall back to values in `.env` if not
-  provided; do not invent these values yourself, ask the user if they are missing
-  and not already on file.
+- Dates accepted by the tool are `YYYY-MM-DD` or `DD.MM.YYYY`; times use `HH:MM`
+  (24 hours, e.g. "08:00").
+- Personal fields (name, addresses, phone, IBAN, BIC, bank) are filled from the
+  applicant's `.env` file when you leave them unset; you cannot see those values.
+  Use personal details only if the user gives them; never ask for bank details.
 - Leave fields unset (do not guess) when information is genuinely unknown; blank
   fields stay empty in the generated PDF for the applicant or office to fill in
   later.
@@ -106,27 +111,42 @@ must be reasonably AFTER `business_end_date` and `business_end_time`.
   [<filename-and-path-to-pdf>](<filename-and-path-to-pdf>).
 """
 
-mcp = FastMCP(
-    name="Business Trip Application",
-    instructions=(
-        "Fills the applicant-editable fields of the German business-trip "
-        "application PDF (Dienstreiseantrag) and saves a completed PDF. "
-        "Call the `business_trip_travel_planning_guide` prompt first if you "
-        "need help deciding transport mode or travel dates/times."
-    ),
-)
 
-mcp.tool(
-    create_business_trip_application,
-    name="create_business_trip_application",
-    description=TRAVEL_PLANNING_GUIDE,
-)
+def travel_planning_guide(form) -> str:
+    """Return the shared guide for the applicant's home city plus the notes for the form."""
+    home_city = os.getenv("HOME_CITY") or "Leipzig"
+    return TRAVEL_PLANNING_GUIDE.format(form_title=form.TITLE, home_city=home_city) + form.GUIDE_NOTES
 
 
-@mcp.prompt(name="business_trip_travel_planning_guide")
-def business_trip_travel_planning_guide() -> str:
-    """Guidance for choosing transport mode and estimating travel dates/times."""
-    return TRAVEL_PLANNING_GUIDE
+def build_server(form_name: str | None = None) -> FastMCP:
+    """Create the MCP server for one form; without a name, the one set as DRA_FORM in .env."""
+    form = get_form(form_name)
+    guide = travel_planning_guide(form)
+
+    server = FastMCP(
+        name="Business Trip Application",
+        instructions=(
+            f"Fills the applicant-editable fields of the German business-trip application "
+            f"PDF ({form.TITLE}) and saves a completed PDF. "
+            "Call the `business_trip_travel_planning_guide` prompt first if you "
+            "need help deciding transport mode or travel dates/times."
+        ),
+    )
+    server.tool(
+        form.create_business_trip_application,
+        name="create_business_trip_application",
+        description=guide,
+    )
+
+    @server.prompt(name="business_trip_travel_planning_guide")
+    def business_trip_travel_planning_guide() -> str:
+        """Guidance for choosing transport mode and estimating travel dates/times."""
+        return guide
+
+    return server
+
+
+mcp = build_server()
 
 
 if __name__ == "__main__":

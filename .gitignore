@@ -2,4 +2,8 @@
 .venv/
 __pycache__/
 *.py[cod]
-business_trip_application_filled.pdf
+
+# Filled applications contain personal and banking data; only the blank templates are tracked.
+output/
+*.pdf
+!00_application-form*.pdf

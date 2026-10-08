@@ -7,6 +7,8 @@ is still importable from here and fills the Saxon form, as it did before other f
 import argparse
 import inspect
 import os
+import subprocess
+import sys
 from pathlib import Path
 from typing import Literal, Sequence, get_args, get_origin
 
@@ -65,6 +67,9 @@ def build_parser(form=form_saxony) -> argparse.ArgumentParser:
     parser.add_argument(
         "--output", type=Path, default=None, help="Path for the filled PDF (default: OUTPUT_DIR from .env, else output/)."
     )
+    parser.add_argument(
+        "--open", action=argparse.BooleanOptionalAction, default=True, help="Open the filled PDF afterwards."
+    )
 
     for name, parameter in inspect.signature(form.create_business_trip_application).parameters.items():
         option = "--" + name.replace("_", "-")
@@ -78,6 +83,17 @@ def build_parser(form=form_saxony) -> argparse.ArgumentParser:
     return parser
 
 
+def open_file(path: Path) -> None:
+    """Open a file with the default application of the operating system."""
+    try:
+        if sys.platform == "win32":
+            os.startfile(path)
+        else:
+            subprocess.run(["open" if sys.platform == "darwin" else "xdg-open", str(path)], check=True)
+    except (OSError, subprocess.CalledProcessError) as error:
+        print(f"Could not open {path}: {error}", file=sys.stderr)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     form_option = argparse.ArgumentParser(add_help=False)
     form_option.add_argument("--form", choices=tuple(FORMS), default=None)
@@ -87,9 +103,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     arguments.pop("form")
     output_path = arguments.pop("output")
     template_path = arguments.pop("template")
+    open_pdf = arguments.pop("open")
     result = form.fill(arguments, output_path, template_path)
     print(f"Filled application written to {result}")
-    os.startfile(result)
+    if open_pdf:
+        open_file(result)
     return 0
 
 

@@ -1,6 +1,6 @@
 """Command line interface for filling business-trip application PDFs.
 
-The forms live in their own modules (form_saxony.py, ...). `create_business_trip_application`
+The forms live in their own modules (form_saxony.py, form_tud.py). `create_business_trip_application`
 is still importable from here and fills the Saxon form, as it did before other forms existed.
 """
 
@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Literal, Sequence, get_args, get_origin
 
 import form_saxony
+import form_tud
 import pdf_form
 from form_saxony import (  # re-exported for existing imports
     CHECKBOX_FIELDS,
@@ -25,7 +26,7 @@ from form_saxony import (  # re-exported for existing imports
 from pdf_form import format_date, parse_datetime  # re-exported for existing imports
 
 
-FORMS = {form_saxony.NAME: form_saxony}
+FORMS = {form_saxony.NAME: form_saxony, form_tud.NAME: form_tud}
 DEFAULT_FORM = form_saxony.NAME
 
 

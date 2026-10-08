@@ -4,7 +4,7 @@ import inspect
 from pathlib import Path
 from typing import Literal
 
-from pdf_form import BASE_DIR, check_trip_times, fill_pdf, map_fields, with_env_defaults
+from pdf_form import BASE_DIR, check_known_arguments, check_trip_times, fill_pdf, map_fields, with_env_defaults
 
 
 NAME = "saxony"
@@ -244,9 +244,7 @@ PARAMETERS = frozenset(inspect.signature(create_business_trip_application).param
 
 def fill(values: dict, output_path: str | Path | None = None, template_path: str | Path = TEMPLATE_PDF) -> Path:
     """Fill the form from a dict of `create_business_trip_application` arguments."""
-    unknown = set(values) - PARAMETERS
-    if unknown:
-        raise TypeError(f"Unknown arguments for the {NAME} form: {', '.join(sorted(unknown))}.")
+    check_known_arguments(values, PARAMETERS, NAME)
     values = with_env_defaults(values, ENV_DEFAULTS)
     check_trip_times(values)
     text, buttons = map_fields(values, TEXT_FIELDS, DATE_FORMATS, CHECKBOX_FIELDS, CHOICES)

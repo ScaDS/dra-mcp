@@ -28,6 +28,12 @@ def load_env() -> None:
     load_dotenv(ENV_FILE)
 
 
+def check_known_arguments(values: dict, parameters: frozenset[str], form_name: str) -> None:
+    unknown = set(values) - parameters
+    if unknown:
+        raise TypeError(f"Unknown arguments for the {form_name} form: {', '.join(sorted(unknown))}.")
+
+
 def with_env_defaults(values: dict, env_defaults: dict[str, str]) -> dict:
     """Return a copy of `values` in which unset arguments fall back to variables from .env."""
     load_env()

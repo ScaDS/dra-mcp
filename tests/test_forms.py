@@ -100,12 +100,27 @@ def test_invalid_choice_lists_the_valid_values(form):
         ({"business_end_time": "08:00"}, "Business start date/time must not be after business end"),
         ({"return_time": "15:00"}, "Return date/time must be after business end"),
         ({"departure_time": "7 Uhr"}, "Departure time must use HH:MM"),
+        ({"departure_time": "07:0"}, "Departure time must use HH:MM"),
+        ({"return_time": "25:00"}, "Return time must use HH:MM"),
         ({"return_date": "12/10/2026"}, "Return date must use YYYY-MM-DD"),
     ],
 )
 def test_trip_times_are_checked(form, changes, message):
     with pytest.raises(ValueError, match=message):
         form.fill(TRIP | changes)
+
+
+@form_param
+@pytest.mark.parametrize("time_value", ["7 Uhr", "07:0", "7"])
+def test_each_time_is_checked_even_without_the_rest_of_the_trip(form, time_value):
+    with pytest.raises(ValueError, match="Departure time must use HH:MM"):
+        form.fill({"departure_time": time_value})
+
+
+@form_param
+def test_times_are_written_as_hh_mm(form):
+    output = form.fill(TRIP | {"departure_time": "7:05"})
+    assert "07:05" in field_values(output).values()
 
 
 @form_param

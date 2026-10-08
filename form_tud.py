@@ -7,10 +7,10 @@ from typing import Literal
 from pdf_form import (
     BASE_DIR,
     check_known_arguments,
-    check_trip_times,
     fill_pdf,
     format_date,
     map_fields,
+    validate_trip_times,
     with_env_defaults,
 )
 
@@ -364,7 +364,7 @@ def fill(values: dict, output_path: str | Path | None = None, template_path: str
     """Fill the form from a dict of `create_business_trip_application` arguments."""
     check_known_arguments(values, PARAMETERS, NAME)
     values = with_env_defaults(values, ENV_DEFAULTS)
-    check_trip_times(values)
+    values = validate_trip_times(values)
     purpose = values.get("purpose")
     if purpose is not None and len(purpose) > PURPOSE_MAX_LENGTH:
         raise ValueError(

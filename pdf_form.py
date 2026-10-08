@@ -1,7 +1,8 @@
 """Form-independent helpers for filling the applicant fields of a PDF form."""
 
 import os
-from datetime import date, datetime
+import re
+from datetime import date, datetime, time
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -15,6 +16,9 @@ DEFAULT_OUTPUT_DIR = BASE_DIR / "output"
 DEFAULT_OUTPUT_NAME = "business_trip_application_filled.pdf"
 
 INPUT_DATE_FORMATS = ("%Y-%m-%d", "%d.%m.%Y")
+TIME_PATTERN = re.compile(r"\d{1,2}:\d{2}")
+
+TRIP_MOMENTS = ("departure", "business_start", "business_end", "return")
 
 # (earlier, later, may be equal, error message) for the four moments of a trip
 TRIP_ORDER = (
@@ -57,17 +61,31 @@ def format_date(value: str, output_format: str = "%d.%m.%Y") -> str:
     return parse_date(value).strftime(output_format)
 
 
-def parse_datetime(date_value: str, time_value: str, label: str) -> datetime:
-    parsed_date = parse_date(date_value, f"{label} date")
+def parse_time(value: str, label: str) -> time:
+    message = f"{label} time must use HH:MM format."
+    if not TIME_PATTERN.fullmatch(value):
+        raise ValueError(message)
     try:
-        parsed_time = datetime.strptime(time_value, "%H:%M").time()
+        return datetime.strptime(value, "%H:%M").time()
     except ValueError as error:
-        raise ValueError(f"{label} time must use HH:MM format.") from error
-    return datetime.combine(parsed_date, parsed_time)
+        raise ValueError(message) from error
 
 
-def check_trip_times(values: dict) -> None:
-    """Check that departure, business start, business end and return are in chronological order."""
+def parse_datetime(date_value: str, time_value: str, label: str) -> datetime:
+    return datetime.combine(parse_date(date_value, f"{label} date"), parse_time(time_value, label))
+
+
+def validate_trip_times(values: dict) -> dict:
+    """Check every given trip time and the chronological order of the trip.
+
+    Returns a copy of `values` with the times written as HH:MM (e.g. "7:00" becomes "07:00").
+    """
+    values = dict(values)
+    for moment in TRIP_MOMENTS:
+        name = f"{moment}_time"
+        if values.get(name) is not None:
+            values[name] = parse_time(values[name], moment.replace("_", " ").capitalize()).strftime("%H:%M")
+
     for earlier, later, may_be_equal, message in TRIP_ORDER:
         names = [f"{moment}_{part}" for moment in (earlier, later) for part in ("date", "time")]
         if any(values.get(name) is None for name in names):
@@ -76,6 +94,7 @@ def check_trip_times(values: dict) -> None:
         end = parse_datetime(values[f"{later}_date"], values[f"{later}_time"], later.replace("_", " ").capitalize())
         if start > end or (start == end and not may_be_equal):
             raise ValueError(message)
+    return values
 
 
 def map_fields(
